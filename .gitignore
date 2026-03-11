@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 data/
 venv/
+mtbs_perimeter_data/
+mtbs_fod_pts_data/
