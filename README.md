@@ -8,14 +8,16 @@ An interactive overlay map comparing **where wildfires actually burned** (satell
 
 ### Fire Perimeters MTBS
 
-| Detail              | Value                                                         |
-| ------------------- | ------------------------------------------------------------- |
-| **Source**          | [MTBS Direct Download](https://www.mtbs.gov/direct-download)  |
-| **Basis**           | Landsat satellite imagery                                     |
-| **Coverage**        | 1984–present (US-wide)                                        |
-| **Threshold**       | ≥1,000 acres (West) · ≥500 acres (East)                       |
-| **Layer used**      | `Boundaries` shapefile, filtered to `Event_Type = 'Wildfire'` |
-| **Already in repo** | `mtbs_perimeter_data/` and `mtbs_fod_pts_data/`               |
+wildfire dataset produced by the USGS and other federal agencies that maps fires using satellite imagery, from satellite images rather than agency reports, it captures fires across different regions more consistently
+
+| Detail              | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| **Source**          | [Monitoring Trends in Burn Severity (MTBS)](https://www.mtbs.gov/direct-download) |
+| **Basis**           | Landsat satellite imagery by the USGS and other federal agencies                  |
+| **Coverage**        | 1984–present (US-wide)                                                            |
+| **Threshold**       | ≥1,000 acres (West) · ≥500 acres (East)                                           |
+| **Layer used**      | `Boundaries` shapefile, filtered to `Event_Type = 'Wildfire'`                     |
+| **Already in repo** | `mtbs_perimeter_data/` and `mtbs_fod_pts_data/`                                   |
 
 > **Known bias:** Very small fires (<500–1000 ac) are excluded, but these are not the focus of this study and the threshold is well-documented.
 
