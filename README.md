@@ -30,3 +30,8 @@ wildfire dataset produced by the USGS and other federal agencies that maps fires
 | **Rate limits**    | 10 requests/min · 4,000 requests/day (free tier)                                                     |
 | **Archive depth**  | Back to 1851                                                                                         |
 | **Query strategy** | Keywords `"wildfire" OR "forest fire" OR "bushfire"`, filtered by `begin_date` / `end_date` per year |
+
+### Viz
+
+![Wildfire Reality vs Media Coverage](img/emp.png)
+_Example Visualization: Choropleth map where darker shades indicate higher wildfire intensity, and proportional dots showing media coverage counts by state._
