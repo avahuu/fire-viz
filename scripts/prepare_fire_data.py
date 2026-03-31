@@ -28,7 +28,6 @@ def prepare_data():
     
     # Export to GeoJSON
     geojson_path = 'data/fires_2020_2024.geojson'
-    print(f"Exporting to {geojson_path}...")
     gdf.to_file(geojson_path, driver='GeoJSON')
     
     # Export centroids to CSV for easier point maps in Datawrapper
