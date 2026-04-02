@@ -19,7 +19,6 @@ def scrape_nyt_articles():
     if os.path.exists(output_file):
         print(f"{output_file} exists. Overwriting.")
     
-    print("Starting NYT Article Search Scrape (Respecting 10 req/min limit)...")
     
     for year in years:
         b_date = f"{year}0101"
@@ -35,8 +34,6 @@ def scrape_nyt_articles():
                 "api-key": API_KEY
             }
             
-            # Print status before request
-            print(f"Requesting Year {year}, Page {page}...", end=" ")
             
             response = requests.get(base_url, params=params)
             if response.status_code == 429:
@@ -64,7 +61,7 @@ def scrape_nyt_articles():
                 keywords_list = [k["value"] for k in doc.get("keywords", []) if k.get("name") == "glocations"]
                 glocations = "; ".join(keywords_list) if keywords_list else None
                 
-                # Merge location data
+                # Find location data
                 combined_locations = []
                 if locations: combined_locations.append(locations)
                 if glocations: combined_locations.append(glocations)
@@ -95,7 +92,6 @@ def scrape_nyt_articles():
 
     df = pd.DataFrame(all_articles)
     df.to_csv(output_file, index=False)
-    print(f"Finished. Saved {len(df)} total articles to {output_file}")
 
 if __name__ == "__main__":
     scrape_nyt_articles()
