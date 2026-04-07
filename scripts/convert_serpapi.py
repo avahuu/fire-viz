@@ -32,8 +32,7 @@ STATE_ABBREVS = {
     "wi": "Wisconsin", "wy": "Wyoming"
 }
 
-# City/region keywords in source names -> state
-# Ordered longest-first to prevent partial matches (e.g. "New York" before "York")
+# News outlet name
 CITY_TO_STATE = {
     # Regions
     "bay area": "California",
@@ -223,14 +222,14 @@ def extract_state_from_source(source):
         return found
     src_lower = source.lower()
 
-    # First check if a full state name is literally in the source name
+    # check source name
     found |= extract_states_from_text(source)
 
-    # Then check city/region keywords (longest match first to avoid partial hits)
+    
     for city, state in sorted(CITY_TO_STATE.items(), key=lambda x: -len(x[0])):
         if city in src_lower:
             found.add(state)
-            break  # Only apply the best (longest) match per source
+            break  
 
     return found
 
@@ -304,10 +303,7 @@ def convert_to_csv():
             }
             writer.writerow(row)
 
-    print(f"Successfully converted {len(data)} items to {output_file}")
-    print(f"Source name inference resolved location for {source_improved} additional articles")
-    print(f"Still 'Unknown' after all layers: {still_unknown} articles")
-
+    
 
 if __name__ == "__main__":
     convert_to_csv()
