@@ -33,5 +33,7 @@ wildfire dataset produced by the USGS and other federal agencies that maps fires
 
 ### Viz
 
-![Wildfire Reality vs Media Coverage](img/emp.png)
-_Example Visualization: Choropleth map where darker shades indicate higher wildfire intensity, and proportional dots showing media coverage counts by state._
+[![Wildfire Coverage Visualization](https://public.flourish.studio/story/3639677/thumbnail)](https://public.flourish.studio/story/3639677)
+
+> 🔗 [View the interactive visualization on Flourish](https://public.flourish.studio/story/3639677)
+> _Example Visualization: Choropleth map where darker shades indicate higher wildfire intensity, and proportional dots showing media coverage counts by state._
