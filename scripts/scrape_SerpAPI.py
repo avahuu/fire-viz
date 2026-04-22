@@ -4,9 +4,14 @@ import re
 import os
 import time
 import calendar
+from dotenv import load_dotenv
 
-API_KEY = "b291182494b0c9c75dc51c9f6fbd410dc2f723abf12dbee960475aa1ddf02040"
+# Load environment variables from .env file
+load_dotenv()
+
+API_KEY = os.getenv("SERPAPI_KEY")
 URL = "https://serpapi.com/search.json"
+OUTPUT_FILE = "data/serpapi_wildfire_news.json"
 
 US_STATES = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -21,6 +26,7 @@ US_STATES = [
 ]
 
 def extract_states(text):
+    """Extract US states from a given text."""
     if not text:
         return []
     found_states = set()
@@ -30,35 +36,74 @@ def extract_states(text):
             found_states.add(state)
     return list(found_states)
 
+def build_search_params(year, month, page):
+    """Build the parameters for the SerpAPI request."""
+    _, last_day = calendar.monthrange(year, month)
+    cd_min = f"{month:02d}/01/{year}"
+    cd_max = f"{month:02d}/{last_day:02d}/{year}"
+    tbs_param = f"cdr:1,cd_min:{cd_min},cd_max:{cd_max}"
+    
+    return {
+        "engine": "google",
+        "q": "wildfire",
+        "gl": "us",
+        "hl": "en",
+        "tbm": "nws",
+        "tbs": tbs_param,
+        "start": page * 10,
+        "api_key": API_KEY
+    }
+
+def fetch_page(params):
+    """Fetch a single page of results from SerpAPI."""
+    response = requests.get(URL, params=params)
+    return response.json()
+
+def process_articles(articles):
+    """Process a list of articles to extract required information."""
+    processed = []
+    for article in articles:
+        title = article.get("title", "")
+        snippet = article.get("snippet", "")
+        
+        combined_text = f"{title} {snippet}"
+        states = extract_states(combined_text)
+        
+        item = {
+            "title": title,
+            "link": article.get("link", ""),
+            "date": article.get("date", ""),
+            "source": article.get("source", ""),
+            "states_mentioned": states
+        }
+        processed.append(item)
+    return processed
+
+def save_data(data, output_file):
+    """Save the current list of articles to a JSON file incrementally."""
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, "w") as f:
+        json.dump(data, f, indent=4)
+
 def fetch_wildfire_news():
+    """Main execution function to fetch all wildfire news."""
+    if not API_KEY:
+        print("Error: SERPAPI_KEY not found in environment. Please set it in a .env file.")
+        return []
+        
     extracted_data = []
     
     # Iterate year by year, month by month
     for year in range(2020, 2025):
         for month in range(1, 13):
-            _, last_day = calendar.monthrange(year, month)
-            cd_min = f"{month:02d}/01/{year}"
-            cd_max = f"{month:02d}/{last_day:02d}/{year}"
-            tbs_param = f"cdr:1,cd_min:{cd_min},cd_max:{cd_max}"
-            
             print(f"\n--- Scraping {month:02d}/{year} ---")
             
             # Fetch up to 300 results (30 pages) per month
             for page in range(30):
-                params = {
-                    "engine": "google",
-                    "q": "wildfire",
-                    "gl": "us",
-                    "hl": "en",
-                    "tbm": "nws",
-                    "tbs": tbs_param,
-                    "start": page * 10,
-                    "api_key": API_KEY
-                }
-
+                params = build_search_params(year, month, page)
+                
                 print(f"Fetching page {page+1} for {month:02d}/{year}...")
-                response = requests.get(URL, params=params)
-                data = response.json()
+                data = fetch_page(params)
                 
                 if "error" in data:
                     print("API Error:", data["error"])
@@ -72,21 +117,12 @@ def fetch_wildfire_news():
                     print(f"No more articles found for {month:02d}/{year}.")
                     break
 
-                for article in articles:
-                    title = article.get("title", "")
-                    snippet = article.get("snippet", "")
-                    
-                    combined_text = f"{title} {snippet}"
-                    states = extract_states(combined_text)
-                    
-                    item = {
-                        "title": title,
-                        "link": article.get("link", ""),
-                        "date": article.get("date", ""),
-                        "source": article.get("source", ""),
-                        "states_mentioned": states
-                    }
-                    extracted_data.append(item)
+                processed_articles = process_articles(articles)
+                extracted_data.extend(processed_articles)
+                
+                # Save incrementally after each page
+                if processed_articles:
+                    save_data(extracted_data, OUTPUT_FILE)
                     
                 if "serpapi_pagination" not in data or "next" not in data["serpapi_pagination"]:
                     break
@@ -97,13 +133,4 @@ def fetch_wildfire_news():
 
 if __name__ == "__main__":
     articles = fetch_wildfire_news()
-
-    # Save to JSON
-    os.makedirs("data", exist_ok=True)
-    output_file = "data/serpapi_wildfire_news.json"
-    
-    # Append if desired or just rewrite. Given month approach, overwriting is fine
-    with open(output_file, "w") as f:
-        json.dump(articles, f, indent=4)
-        
-    print(f"\nSuccessfully fetched {len(articles)} articles and saved to {output_file}")
+    print(f"\nSuccessfully fetched {len(articles)} articles and saved to {OUTPUT_FILE}")
