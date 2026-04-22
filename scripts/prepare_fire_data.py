@@ -20,6 +20,10 @@ def prepare_data():
     cols_to_keep = ['Event_ID', 'Incid_Name', 'Incid_Type', 'BurnBndAc', 'BurnBndLat', 'BurnBndLon', 'Ig_Date', 'geometry']
     gdf = gdf[[c for c in cols_to_keep if c in gdf.columns]]
     
+    # Title-case the incident name so it's not in ALL CAPS
+    if 'Incid_Name' in gdf.columns:
+        gdf['Incid_Name'] = gdf['Incid_Name'].str.title()
+    
     # Make date a string for export
     gdf['Ig_Date'] = gdf['Ig_Date'].dt.strftime('%Y-%m-%d')
     gdf['Year'] = gdf['Ig_Date'].str[:4]
