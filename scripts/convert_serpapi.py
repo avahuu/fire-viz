@@ -245,7 +245,10 @@ def mentions_australia(item):
 
 def convert_to_csv():
     input_file = "data/serpapi_wildfire_news.json"
-    output_file = "data/serpapi_wildfire_news.csv"
+
+    # Organized output folders
+    os.makedirs("data/processed", exist_ok=True)
+    output_file = "data/processed/serpapi_wildfire_news.csv"
 
     with open(input_file, "r") as f:
         data = json.load(f)

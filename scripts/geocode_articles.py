@@ -1,77 +1,90 @@
 import pandas as pd
-import json
 
-# Common state centroid approximate coordinates for quick geocoding
-# In NYT data, geo_facet often gives State names or major cities.
+# Full 50-state centroids
 STATE_CENTROIDS = {
-    "California": {"lat": 36.7782, "lon": -119.4179},
-    "Oregon": {"lat": 43.8041, "lon": -120.5542},
-    "Washington State": {"lat": 47.7511, "lon": -120.7401},
-    "Colorado": {"lat": 39.5501, "lon": -105.7821},
-    "Texas": {"lat": 31.9686, "lon": -99.9018},
-    "Arizona": {"lat": 34.0489, "lon": -111.0937},
-    "New Mexico": {"lat": 34.5199, "lon": -105.8701},
-    "Nevada": {"lat": 38.8026, "lon": -116.4194},
-    "Utah": {"lat": 39.3200, "lon": -111.0937},
-    "Idaho": {"lat": 44.0682, "lon": -114.7420},
-    "Montana": {"lat": 46.9219, "lon": -110.4544},
-    "Wyoming": {"lat": 43.0760, "lon": -107.2903},
+    "Alabama": {"lat": 32.8067, "lon": -86.7911},
     "Alaska": {"lat": 64.2008, "lon": -149.4937},
+    "Arizona": {"lat": 34.0489, "lon": -111.0937},
+    "Arkansas": {"lat": 34.7999, "lon": -92.1999},
+    "California": {"lat": 36.7782, "lon": -119.4179},
+    "Colorado": {"lat": 39.5501, "lon": -105.7821},
+    "Connecticut": {"lat": 41.6032, "lon": -73.0877},
+    "Delaware": {"lat": 38.9108, "lon": -75.5277},
+    "Florida": {"lat": 27.9944, "lon": -81.7603},
+    "Georgia": {"lat": 32.1656, "lon": -82.9001},
     "Hawaii": {"lat": 19.8968, "lon": -155.5828},
+    "Idaho": {"lat": 44.0682, "lon": -114.7420},
+    "Illinois": {"lat": 40.6331, "lon": -89.3985},
+    "Indiana": {"lat": 40.2672, "lon": -86.1349},
+    "Iowa": {"lat": 41.8780, "lon": -93.0977},
+    "Kansas": {"lat": 39.0119, "lon": -98.4842},
+    "Kentucky": {"lat": 37.8393, "lon": -84.2700},
+    "Louisiana": {"lat": 31.2448, "lon": -92.1450},
+    "Maine": {"lat": 45.2538, "lon": -69.4455},
+    "Maryland": {"lat": 39.0458, "lon": -76.6413},
+    "Massachusetts": {"lat": 42.4072, "lon": -71.3824},
+    "Michigan": {"lat": 44.3148, "lon": -85.6024},
+    "Minnesota": {"lat": 46.7296, "lon": -94.6859},
+    "Mississippi": {"lat": 32.3547, "lon": -89.3985},
+    "Missouri": {"lat": 37.9643, "lon": -91.8318},
+    "Montana": {"lat": 46.9219, "lon": -110.4544},
+    "Nebraska": {"lat": 41.4925, "lon": -99.9018},
+    "Nevada": {"lat": 38.8026, "lon": -116.4194},
+    "New Hampshire": {"lat": 43.1939, "lon": -71.5724},
+    "New Jersey": {"lat": 40.0583, "lon": -74.4057},
+    "New Mexico": {"lat": 34.5199, "lon": -105.8701},
+    "New York": {"lat": 42.1657, "lon": -74.9481},
+    "North Carolina": {"lat": 35.6301, "lon": -79.8064},
+    "North Dakota": {"lat": 47.5515, "lon": -101.0020},
+    "Ohio": {"lat": 40.4173, "lon": -82.9071},
+    "Oklahoma": {"lat": 35.5653, "lon": -96.9289},
+    "Oregon": {"lat": 43.8041, "lon": -120.5542},
+    "Pennsylvania": {"lat": 41.2033, "lon": -77.1945},
+    "Rhode Island": {"lat": 41.6809, "lon": -71.5118},
+    "South Carolina": {"lat": 33.8361, "lon": -81.1637},
+    "South Dakota": {"lat": 43.9695, "lon": -99.9018},
+    "Tennessee": {"lat": 35.7478, "lon": -86.6923},
+    "Texas": {"lat": 31.9686, "lon": -99.9018},
+    "Utah": {"lat": 39.3200, "lon": -111.0937},
+    "Vermont": {"lat": 44.5588, "lon": -72.5778},
+    "Virginia": {"lat": 37.4316, "lon": -78.6569},
+    "Washington": {"lat": 47.7511, "lon": -120.7401},
+    "West Virginia": {"lat": 38.5976, "lon": -80.4549},
+    "Wisconsin": {"lat": 43.7844, "lon": -88.7879},
+    "Wyoming": {"lat": 43.0760, "lon": -107.2903},
 }
 
 def geocode_articles():
-    print("Loading scraped NYT articles...")
-    try:
-        df = pd.read_csv("data/nyt_articles.csv")
-    except FileNotFoundError:
-        print("data/nyt_articles.csv not found yet. Run scrape_nyt.py first.")
-        return
-    
-    print(f"Total articles loaded: {len(df)}")
-    
-    geocoded_rows = []
-    
+    input_csv = "data/processed/serpapi_wildfire_news.csv"
+    output_csv = "data/processed/serpapi_wildfire_news_geocoded.csv"
+
+    print(f"Loading {input_csv}...")
+    df = pd.read_csv(input_csv)
+    print(f"Total articles: {len(df)}")
+
+    lats, lons = [], []
+
     for _, row in df.iterrows():
-        locations = str(row['locations']) if pd.notnull(row['locations']) else ""
+        locations = str(row.get("locations", ""))
         lat, lon = None, None
-        
-        # 1) Specific state matches
+
+        # Use the first recognized state in the locations column
         for state, coords in STATE_CENTROIDS.items():
-            if state in locations or state in str(row['headline']) or state in str(row['snippet']):
-                lat = coords['lat']
-                lon = coords['lon']
+            if state in locations:
+                lat = coords["lat"]
+                lon = coords["lon"]
                 break
-        
-        if pd.notnull(row['headline']) and lat is None:
-            # Fallback simple guesses based on "Maui", "Dixie", "Camp Fire"
-            headline_lower = row['headline'].lower()
-            if "hawaii" in headline_lower or "maui" in headline_lower or "lahaina" in headline_lower:
-                lat, lon = 20.8783, -156.6825 # Maui
-            elif "california" in headline_lower or "dixie" in headline_lower:
-                lat, lon = STATE_CENTROIDS['California']['lat'], STATE_CENTROIDS['California']['lon']
-            elif "oregon" in headline_lower:
-                lat, lon = STATE_CENTROIDS['Oregon']['lat'], STATE_CENTROIDS['Oregon']['lon']
-            elif "colorado" in headline_lower or "marshall" in headline_lower:
-                lat, lon = STATE_CENTROIDS['Colorado']['lat'], STATE_CENTROIDS['Colorado']['lon']
-        
-        geocoded_rows.append({
-            "date": row['date'],
-            "headline": row['headline'],
-            "snippet": row['snippet'],
-            "web_url": row['web_url'],
-            "locations": row['locations'],
-            "lat": lat,
-            "lon": lon
-        })
-    
-    geo_df = pd.DataFrame(geocoded_rows)
-    # Give it a final pass where only non-null lat/lons are kept, or mark them as Unknown
-    geocoded_count = len(geo_df.dropna(subset=['lat', 'lon']))
-    
-    output_csv = "data/nyt_articles_geocoded.csv"
-    geo_df.to_csv(output_csv, index=False)
-    print(f"Finished geocoding! {geocoded_count} out of {len(geo_df)} articles have lat/lon.")
+
+        lats.append(lat)
+        lons.append(lon)
+
+    df["lat"] = lats
+    df["lon"] = lons
+
+    geocoded_count = df[["lat", "lon"]].notna().all(axis=1).sum()
+    df.to_csv(output_csv, index=False)
+
+    print(f"Geocoded {geocoded_count} / {len(df)} articles ({geocoded_count/len(df)*100:.1f}%)")
     print(f"Saved to {output_csv}")
 
 if __name__ == "__main__":
