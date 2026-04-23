@@ -330,7 +330,70 @@ def convert_to_csv():
             }
             writer.writerow(row)
 
-    
+    print(f"Successfully converted {len(data)} items to {output_file}")
+    print(f"Source name inference resolved location for {source_improved} additional articles")
+    print(f"Still 'Unknown' after all layers: {still_unknown} articles")
+
+
+def make_choropleth():
+    """Read the manually curated geocoded Numbers file and count articles per state."""
+    from numbers_parser import Document
+    from collections import Counter
+
+    STATES_META = [
+        ('01','AL','Alabama'), ('02','AK','Alaska'), ('04','AZ','Arizona'),
+        ('05','AR','Arkansas'), ('06','CA','California'), ('08','CO','Colorado'),
+        ('09','CT','Connecticut'), ('10','DE','Delaware'),
+        ('12','FL','Florida'), ('13','GA','Georgia'), ('15','HI','Hawaii'),
+        ('16','ID','Idaho'), ('17','IL','Illinois'), ('18','IN','Indiana'),
+        ('19','IA','Iowa'), ('20','KS','Kansas'), ('21','KY','Kentucky'),
+        ('22','LA','Louisiana'), ('23','ME','Maine'), ('24','MD','Maryland'),
+        ('25','MA','Massachusetts'), ('26','MI','Michigan'), ('27','MN','Minnesota'),
+        ('28','MS','Mississippi'), ('29','MO','Missouri'), ('30','MT','Montana'),
+        ('31','NE','Nebraska'), ('32','NV','Nevada'), ('33','NH','New Hampshire'),
+        ('34','NJ','New Jersey'), ('35','NM','New Mexico'), ('36','NY','New York'),
+        ('37','NC','North Carolina'), ('38','ND','North Dakota'), ('39','OH','Ohio'),
+        ('40','OK','Oklahoma'), ('41','OR','Oregon'), ('42','PA','Pennsylvania'),
+        ('44','RI','Rhode Island'), ('45','SC','South Carolina'), ('46','SD','South Dakota'),
+        ('47','TN','Tennessee'), ('48','TX','Texas'), ('49','UT','Utah'),
+        ('50','VT','Vermont'), ('51','VA','Virginia'), ('53','WA','Washington'),
+        ('54','WV','West Virginia'), ('55','WI','Wisconsin'), ('56','WY','Wyoming'),
+    ]
+
+    input_file = "data/manuly/M_serpapi_wildfire_news_geocoded.numbers"
+    output_file = "data/processed/news_choropleth.csv"
+
+    print(f"\nReading {input_file}...")
+    doc = Document(input_file)
+    sheet = doc.sheets[0]
+    table = sheet.tables[0]
+    rows = list(table.rows())
+    headers = [cell.value for cell in rows[0]]
+    data = [[cell.value for cell in row] for row in rows[1:]]
+
+    import csv as csv_module
+    counts = Counter()
+    for row in data:
+        row_dict = dict(zip(headers, row))
+        locs = str(row_dict.get("locations", "")).strip()
+        if locs and locs != "Unknown":
+            for state in locs.split(", "):
+                state = state.strip()
+                if state:
+                    counts[state] += 1
+
+    os.makedirs("data/processed", exist_ok=True)
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv_module.DictWriter(f, fieldnames=["FIPS", "STUSPS", "NAME", "Article_Count"])
+        writer.writeheader()
+        for fips, abbr, name in STATES_META:
+            writer.writerow({"FIPS": fips, "STUSPS": abbr, "NAME": name, "Article_Count": counts.get(name, 0)})
+
+    print(f"Saved choropleth to {output_file}")
+    top5 = counts.most_common(5)
+    print("Top 5 states: " + ", ".join(f"{s}={c}" for s, c in top5))
+
 
 if __name__ == "__main__":
     convert_to_csv()
+    make_choropleth()
