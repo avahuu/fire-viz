@@ -36,6 +36,9 @@ STATE_ABBREVS = {
 CITY_TO_STATE = {
     # Regions
     "bay area": "California",
+     "berkeleyside": "California",
+    "kqed": "California",
+    "calmatters": "California",
     "socal": "California",
     "norcal": "California",
     "southern california": "California",
@@ -259,6 +262,27 @@ def convert_to_csv():
     removed = before - len(data)
     if removed:
         print(f"Removed {removed} Australia-related articles.")
+
+    # Remove .gov source articles
+    before = len(data)
+    data = [item for item in data if ".gov" not in item.get("source", "").lower()]
+    removed_gov = before - len(data)
+    if removed_gov:
+        print(f"Removed {removed_gov} .gov source articles.")
+
+    # Deduplicate by URL
+    before = len(data)
+    seen = set()
+    deduped = []
+    for item in data:
+        url = item.get("link", "")
+        if url not in seen:
+            seen.add(url)
+            deduped.append(item)
+    data = deduped
+    print(f"Removed {before - len(data)} duplicate articles. {len(data)} unique articles remaining.")
+
+
 
     headers = ["date", "headline", "snippet", "web_url", "section", "locations"]
     source_improved = 0
